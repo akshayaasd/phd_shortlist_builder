@@ -1,0 +1,54 @@
+{
+  "student_id": "student_001",
+  "education": [
+    {
+      "degree": "B.Tech",
+      "field": "Biomedical Engineering",
+      "institution": "IIT Delhi",
+      "graduation_year": 2022,
+      "gpa": "8.9/10",
+      "thesis": "Non-invasive neural signal decoding using EEG"
+    },
+    {
+      "degree": "M.Tech",
+      "field": "Computational Neuroscience",
+      "institution": "IIT Bombay",
+      "graduation_year": 2024,
+      "gpa": "9.1/10",
+      "thesis": "Sparse coding models of visual cortical representations"
+    }
+  ],
+  "skills": ["Python", "MATLAB", "PyTorch", "fMRI analysis", "EEG signal processing", "spike sorting", "machine learning"],
+  "projects": [
+    {
+      "title": "Decoding motor imagery from EEG using transformer models",
+      "description": "Built a real-time BCI pipeline achieving 85% accuracy on 4-class motor imagery classification."
+    },
+    {
+      "title": "Predictive coding model of V1 neural responses",
+      "description": "Implemented a hierarchical generative model explaining ~72% of variance in V1 responses to natural images."
+    }
+  ],
+  "publications": [
+    {
+      "title": "Sparse autoencoder representations align with human perceptual similarity judgments",
+      "venue": "NeurIPS Workshop on Symmetry and Geometry in Neural Representations",
+      "year": 2023
+    }
+  ],
+  "research_interests": [
+    "computational neuroscience",
+    "neural coding and representation learning",
+    "brain-computer interfaces",
+    "systems neuroscience",
+    "neuroimaging and fMRI analysis"
+  ],
+  "target_countries": ["US", "UK", "CA"],
+  "target_intake": {
+    "semester": "Fall",
+    "year": 2025
+  },
+  "nationality": "IN",
+  "intro_call_summary": "Student is interested in how the brain encodes and transforms sensory information. Strong engineering background. Wants a lab that works at the intersection of theory and experiment. Open to both neuroscience departments and CS/AI labs with neuro focus. Prefers labs that have active collaboration with experimental groups.",
+  "raw_resume": "Priya Sharma | priya.sharma@gmail.com\nIIT Bombay M.Tech Computational Neuroscience (2024) | IIT Delhi B.Tech Biomedical Engineering (2022)\nSkills: Python, PyTorch, MATLAB, fMRI, EEG, spike sorting, ML\nPublished at NeurIPS 2023 Workshop. Research intern at NIMHANS (2022)."
+}
