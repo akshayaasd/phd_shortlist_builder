@@ -30,6 +30,7 @@ from openai import AsyncOpenAI
 
 from src.candidate import Candidate
 from src.profile_parser import StudentProfile
+from src.llm_client import LLMClient
 
 log = logging.getLogger(__name__)
 
