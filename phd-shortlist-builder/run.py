@@ -57,6 +57,7 @@ async def _run_pipeline(
     from src.filters.disambiguation import deduplicate_and_disambiguate
     from src.verification.pi_verifier import apply_pi_verification
     from src.enrichment.email_finder import enrich_emails
+    from src.enrichment.grant_enricher import enrich_candidate_grants
     from src.enrichment.why_match import generate_all_why_matches
     from src.enrichment.recruitment_score import score_and_rank
     from src.feedback.scorer import apply_feedback_scores
@@ -137,7 +138,10 @@ async def _run_pipeline(
         # 5a. Email finding (verified only)
         await enrich_emails(after_verification, http)
 
-        # 5b. Domain similarity (for RecruitmentScore)
+        # 5b. Targeted Grant Enrichment (NIH/UKRI by candidate name)
+        await enrich_candidate_grants(after_verification, http)
+
+        # 5c. Domain similarity (for RecruitmentScore)
         _apply_domain_similarity(after_verification, profile)
 
         # 5c. why_match generation

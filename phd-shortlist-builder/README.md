@@ -55,6 +55,7 @@ Stage 4: PI Verification
         ▼
 Stage 5: Enrichment & Scoring
         │   - Email finding (verified only, null if not found)
+        │   - Targeted Grant Enrichment (targeted NIH/UKRI lookup by PI name & institution)
         │   - why_match generation (gpt-4o-mini, structured JSON)
         │   - RecruitmentScore = f(domain_sim, recency, verification, fit, career_stage)
         │   - Feedback history applied (EMA boost + NOT_RECRUITING suppression)
@@ -108,4 +109,4 @@ Embedding cache in `.cache/embeddings/` prevents re-billing on re-runs.
 2. **Faculty page verification is best-effort** — JS-rendered pages, unusual URL patterns, and 404s on legitimate PIs are common. Weighted low (0.10) in verification score.
 3. **Email coverage** — university faculty pages have inconsistent structure. Expect ~30–50% email coverage in final output.
 4. **OpenAlex topic taxonomy** — some niche research areas may not map well to OpenAlex's concept graph. Synonym expansion (Stage 1) mitigates this.
-5. **Canada**: NSERC grant API not integrated. Canadian supervisors discovered via OpenAlex only.
+5. **Global Funding (e.g., Canada, India, EU)**: While direct official APIs (like NIH/UKRI) are only queried for US/UK candidates, other international funding sources are captured automatically by extracting work-level `awards` metadata directly from OpenAlex.

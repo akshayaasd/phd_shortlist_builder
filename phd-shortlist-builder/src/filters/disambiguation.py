@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-from src.candidate import Candidate
+from src.candidate import Candidate, Grant
 from src.profile_parser import StudentProfile
 
 log = logging.getLogger(__name__)
@@ -36,6 +36,18 @@ def _normalise_inst(inst: str) -> str:
         .split(",")[0]
         .strip()
     )
+
+
+def deduplicate_grants(grants: list[Grant]) -> list[Grant]:
+    """Helper to deduplicate grants by grant_id or title/funder key."""
+    seen = set()
+    unique_grants = []
+    for g in grants:
+        key = g.grant_id.strip().lower() if g.grant_id else f"{g.funder.strip().lower()}|{g.title.strip().lower()}"
+        if key not in seen:
+            seen.add(key)
+            unique_grants.append(g)
+    return unique_grants
 
 
 def deduplicate_and_disambiguate(
@@ -59,7 +71,8 @@ def deduplicate_and_disambiguate(
                 existing = by_openalex[key]
                 # Merge: add grants and sources from duplicate
                 existing.grants.extend(c.grants)
-                existing.active_grant_count += c.active_grant_count
+                existing.grants = deduplicate_grants(existing.grants)
+                existing.active_grant_count = sum(1 for g in existing.grants if g.active)
                 if c.contact_email and not existing.contact_email:
                     existing.contact_email = c.contact_email
                 for src in c.data_sources:
@@ -69,6 +82,9 @@ def deduplicate_and_disambiguate(
                     existing.open_position_url = c.open_position_url
             else:
                 by_openalex[key] = c
+                # Ensure its own grants are also deduplicated
+                c.grants = deduplicate_grants(c.grants)
+                c.active_grant_count = sum(1 for g in c.grants if g.active)
         else:
             no_openalex.append(c)
 
@@ -86,7 +102,8 @@ def deduplicate_and_disambiguate(
             if c_name == e_name and (c_inst in e_inst or e_inst in c_inst):
                 # Merge into existing OpenAlex record
                 existing.grants.extend(c.grants)
-                existing.active_grant_count += c.active_grant_count
+                existing.grants = deduplicate_grants(existing.grants)
+                existing.active_grant_count = sum(1 for g in existing.grants if g.active)
                 if c.contact_email and not existing.contact_email:
                     existing.contact_email = c.contact_email
                 for src in c.data_sources:
@@ -97,6 +114,8 @@ def deduplicate_and_disambiguate(
                 matched = True
                 break
         if not matched:
+            c.grants = deduplicate_grants(c.grants)
+            c.active_grant_count = sum(1 for g in c.grants if g.active)
             remaining_no_oa.append(c)
 
     # --- Pass 3: Flag same-name collisions in remaining pool ---

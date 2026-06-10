@@ -16,8 +16,9 @@ from typing import Any
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.candidate import Candidate, Paper
+from src.candidate import Candidate, Paper, Grant
 from src.profile_parser import StudentProfile
+from src.filters.country_gate import _normalise as _normalise_country
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ async def fetch_recent_works(openalex_id: str, client: httpx.AsyncClient, limit:
         "filter": f"author.id:{openalex_id},publication_year:>{CURRENT_YEAR - 5}",
         "sort": "cited_by_count:desc",
         "per-page": limit,
-        "select": "title,publication_year,doi,cited_by_count,authorships",
+        "select": "id,title,publication_year,doi,cited_by_count,authorships,primary_location,awards",
     }
     data = await _get(client, f"{BASE}/works", params)
     return data.get("results", [])
@@ -73,10 +74,11 @@ def _last_author_rate(works: list[dict], openalex_id: str) -> float:
         if not auths:
             continue
         total += 1
-        max_pos = max((a.get("author_position", "first") for a in auths), key=lambda x: {"first": 0, "middle": 1, "last": 2}.get(x, 0))
+        max_pos = max((a.get("author_position", "first") for a in auths if a), key=lambda x: {"first": 0, "middle": 1, "last": 2}.get(x, 0))
         last_auth = auths[-1] if auths else {}
-        last_auth_id = (last_auth.get("author", {}) or {}).get("id", "")
-        if clean_id in last_auth_id:
+        author_info = (last_auth or {}).get("author") or {}
+        last_auth_id = author_info.get("id") or ""
+        if clean_id and last_auth_id and clean_id in last_auth_id:
             last += 1
     return last / total if total > 0 else 0.0
 
@@ -85,17 +87,63 @@ def _extract_papers(works: list[dict]) -> list[Paper]:
     """Convert OpenAlex works to Paper objects (top 3 by citations)."""
     papers = []
     for w in works[:3]:
+        doi_val = w.get("doi")
+        if doi_val and not doi_val.startswith("http"):
+            doi_val = f"https://doi.org/{doi_val}"
+            
+        url_val = None
+        if w.get("primary_location"):
+            url_val = w["primary_location"].get("landing_page_url")
+        if not url_val:
+            url_val = doi_val
+        if not url_val:
+            url_val = w.get("id")
+
         papers.append(Paper(
             title=w.get("title") or "Untitled",
             year=w.get("publication_year") or CURRENT_YEAR,
-            doi=f"https://doi.org/{w['doi']}" if w.get("doi") else None,
+            doi=doi_val,
             cited_by_count=w.get("cited_by_count") or 0,
+            url=url_val,
         ))
     return papers
 
 
 def _count_recent(works: list[dict]) -> int:
     return sum(1 for w in works if (w.get("publication_year") or 0) >= CURRENT_YEAR - 3)
+
+
+def _extract_grants_from_works(works: list[dict]) -> list[Grant]:
+    """Extract unique grants from the author's works list."""
+    seen_grant_ids = set()
+    grants = []
+    for w in works:
+        for g_data in w.get("awards") or []:
+            funder_name = g_data.get("funder_display_name") or "Unknown Funder"
+            award_id = g_data.get("funder_award_id")
+            
+            # Use (funder, award_id) as key for deduplication
+            key = (funder_name.lower(), (award_id or "").lower())
+            if key in seen_grant_ids:
+                continue
+            seen_grant_ids.add(key)
+            
+            pub_year = w.get("publication_year")
+            # If the work was published recently, the grant might still be active or recently active
+            is_active = pub_year >= CURRENT_YEAR - 2 if pub_year else False
+            
+            title = f"Research Funding: {award_id}" if award_id else f"Research Funding via {funder_name}"
+            
+            grants.append(Grant(
+                title=title,
+                funder=funder_name,
+                grant_id=award_id,
+                url=g_data.get("id") or g_data.get("funder_id"),
+                active=is_active,
+                start_year=pub_year,
+                end_year=None,
+            ))
+    return grants
 
 
 async def _build_candidate_from_author(
@@ -136,6 +184,8 @@ async def _build_candidate_from_author(
     last_auth_rate = _last_author_rate(works, oa_id)
     recent_pubs = _count_recent(works)
     papers = _extract_papers(works)
+    grants = _extract_grants_from_works(works)
+    active_grants_count = sum(1 for g in grants if g.active)
 
     return Candidate(
         supervisor_id=f"openalex:{oa_id.split('/')[-1]}",
@@ -152,6 +202,8 @@ async def _build_candidate_from_author(
         last_author_rate=last_auth_rate,
         topics=topics,
         papers=papers,
+        grants=grants,
+        active_grant_count=active_grants_count,
         data_sources=["openalex"],
     )
 
@@ -163,10 +215,12 @@ async def discover_via_openalex(
     dry_run: bool = False,
 ) -> list[Candidate]:
     """
-    Main entry point: queries OpenAlex for each research interest + synonyms,
-    filtered to target countries. Returns a deduplicated list of Candidates.
+    Main entry point: queries OpenAlex works for each research interest + synonyms,
+    extracts the PIs (last authors) in target countries, and builds Candidates.
     """
-    target_countries = "|".join(profile.target_countries)
+    # Normalize country codes (handles "Germany" → "DE", "UK" → "GB", etc.)
+    normalised_countries = [_normalise_country(c) for c in profile.target_countries]
+    target_countries = "|".join(normalised_countries)
     seen_ids: set[str] = set()
     candidates: list[Candidate] = []
 
@@ -182,29 +236,43 @@ async def discover_via_openalex(
     async def _query_term(term: str) -> list[Candidate]:
         local_candidates: list[Candidate] = []
         try:
+            # 1. Search works (publications) matching the topic
             params = {
                 "search": term,
-                "filter": f"last_known_institutions.country_code:{target_countries}",
+                "filter": f"institutions.country_code:{target_countries},publication_year:>{CURRENT_YEAR - 5}",
                 "sort": "cited_by_count:desc",
                 "per-page": per_query,
-                "select": "id,display_name,last_known_institutions,affiliations,topics,works_count,cited_by_count,counts_by_year,summary_stats",
             }
-            data = await _get(client, f"{BASE}/authors", params)
-            authors = data.get("results", [])
+            works_data = await _get(client, f"{BASE}/works", params)
+            works_results = works_data.get("results", [])
 
-            # Fetch recent works for each author in parallel
-            works_tasks = [
-                fetch_recent_works(a["id"], client)
-                for a in authors if a.get("id")
-            ]
-            all_works = await asyncio.gather(*works_tasks, return_exceptions=True)
+            # 2. Extract unique last author (PI) OpenAlex IDs from the works
+            author_ids = []
+            for work in works_results:
+                auths = work.get("authorships", [])
+                if auths:
+                    # Last author is typically the PI/senior author
+                    last_auth = auths[-1]
+                    pi_author = (last_auth or {}).get("author") or {}
+                    author_id = pi_author.get("id")
+                    if author_id:
+                        author_ids.append(author_id)
+            
+            author_ids = list(dict.fromkeys(author_ids))[:per_query]
 
-            for author, works in zip(authors, all_works):
-                if isinstance(works, Exception):
-                    works = []
+            # 3. Fetch author details and their works in parallel
+            author_details_tasks = [fetch_author_details(aid.split("/")[-1], client) for aid in author_ids]
+            author_works_tasks = [fetch_recent_works(aid.split("/")[-1], client) for aid in author_ids]
+
+            authors_resolved = await asyncio.gather(*author_details_tasks, return_exceptions=True)
+            works_resolved = await asyncio.gather(*author_works_tasks, return_exceptions=True)
+
+            for author, works in zip(authors_resolved, works_resolved):
+                if isinstance(author, Exception) or isinstance(works, Exception):
+                    continue
                 oa_id = author.get("id", "")
                 clean_id = oa_id.split("/")[-1]
-                if clean_id in seen_ids:
+                if not clean_id or clean_id in seen_ids:
                     continue
                 seen_ids.add(clean_id)
                 c = await _build_candidate_from_author(author, term, works)
@@ -224,3 +292,4 @@ async def discover_via_openalex(
 
     log.info(f"OpenAlex: discovered {len(candidates)} candidates across {len(query_terms)} queries")
     return candidates
+
