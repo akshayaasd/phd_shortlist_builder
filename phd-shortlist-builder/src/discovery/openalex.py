@@ -130,7 +130,7 @@ def _extract_grants_from_works(works: list[dict]) -> list[Grant]:
             
             pub_year = w.get("publication_year")
             # If the work was published recently, the grant might still be active or recently active
-            is_active = pub_year >= CURRENT_YEAR - 2 if pub_year else False
+            is_active = pub_year >= CURRENT_YEAR - 3 if pub_year else False
             
             title = f"Research Funding: {award_id}" if award_id else f"Research Funding via {funder_name}"
             
