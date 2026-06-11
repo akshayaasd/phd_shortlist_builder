@@ -13,6 +13,8 @@ from src.discovery.openalex import fetch_recent_works, _extract_papers, _count_r
 
 log = logging.getLogger(__name__)
 
+from src.filters.disambiguation import _normalise_name, _normalise_inst
+
 async def _enrich_single_candidate(candidate: Candidate, client: httpx.AsyncClient):
     # Only enrich if they don't have papers
     if candidate.papers:
@@ -33,9 +35,52 @@ async def _enrich_single_candidate(candidate: Candidate, client: httpx.AsyncClie
         if not results:
             return
             
-        # Take the top result for the author name match
-        top_author = results[0]
-        oa_id = top_author.get("id", "").split("/")[-1]
+        c_name_norm = _normalise_name(candidate.name)
+        c_inst_norm = _normalise_inst(candidate.institution)
+        
+        matched_author = None
+        for author in results:
+            # Check name match
+            author_name = author.get("display_name") or ""
+            author_name_norm = _normalise_name(author_name)
+            name_match = (c_name_norm in author_name_norm or author_name_norm in c_name_norm or
+                          set(c_name_norm.split()) == set(author_name_norm.split()))
+            if not name_match:
+                continue
+                
+            # Check institution match
+            affiliations = author.get("affiliations") or []
+            last_known = author.get("last_known_institutions") or []
+            
+            inst_match = False
+            # Check last known institutions first
+            for inst_obj in last_known:
+                inst_name = inst_obj.get("display_name") or ""
+                inst_name_norm = _normalise_inst(inst_name)
+                if (c_inst_norm in inst_name_norm or inst_name_norm in c_inst_norm or
+                    any(w in inst_name_norm for w in c_inst_norm.split() if len(w) > 4)):
+                    inst_match = True
+                    break
+            
+            # If not matched, check affiliations list
+            if not inst_match:
+                for aff in affiliations:
+                    inst_obj = aff.get("institution") or {}
+                    inst_name = inst_obj.get("display_name") or ""
+                    inst_name_norm = _normalise_inst(inst_name)
+                    if (c_inst_norm in inst_name_norm or inst_name_norm in c_inst_norm or
+                        any(w in inst_name_norm for w in c_inst_norm.split() if len(w) > 4)):
+                        inst_match = True
+                        break
+            
+            if inst_match:
+                matched_author = author
+                break
+                
+        if not matched_author:
+            return
+            
+        oa_id = matched_author.get("id", "").split("/")[-1]
         
         if not oa_id:
             return
@@ -51,7 +96,7 @@ async def _enrich_single_candidate(candidate: Candidate, client: httpx.AsyncClie
         candidate.recent_pubs_last_3_years = _count_recent(works)
         
         # We can also get their topics
-        topics = [t.get("display_name", "") for t in (top_author.get("topics") or [])[:10]]
+        topics = [t.get("display_name", "") for t in (matched_author.get("topics") or [])[:10]]
         if not candidate.topics:
             candidate.topics = topics
             

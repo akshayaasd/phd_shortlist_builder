@@ -10,33 +10,33 @@ def test_openalex_grant_extraction():
     works = [
         {
             "publication_year": 2026,
-            "awards": [
+            "grants": [
                 {
-                    "funder_id": "https://openalex.org/F4320306076",
+                    "funder": "https://openalex.org/F4320306076",
                     "funder_display_name": "National Science Foundation",
-                    "funder_award_id": "NSF-12345"
+                    "award_id": "NSF-12345"
                 }
             ]
         },
         # Duplicate grant in another paper (should be deduplicated)
         {
             "publication_year": 2025,
-            "awards": [
+            "grants": [
                 {
-                    "funder_id": "https://openalex.org/F4320306076",
+                    "funder": "https://openalex.org/F4320306076",
                     "funder_display_name": "National Science Foundation",
-                    "funder_award_id": "NSF-12345"
+                    "award_id": "NSF-12345"
                 }
             ]
         },
         # New grant in an older paper (should be marked inactive if < current_year - 2)
         {
             "publication_year": 2020,
-            "awards": [
+            "grants": [
                 {
-                    "funder_id": "https://openalex.org/F4320306076",
+                    "funder": "https://openalex.org/F4320306076",
                     "funder_display_name": "National Science Foundation",
-                    "funder_award_id": "NSF-99999"
+                    "award_id": "NSF-99999"
                 }
             ]
         }

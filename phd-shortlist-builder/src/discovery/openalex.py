@@ -70,7 +70,6 @@ async def fetch_recent_works(openalex_id: str, client: httpx.AsyncClient, limit:
         "filter": f"author.id:{openalex_id},publication_year:>{CURRENT_YEAR - 5}",
         "sort": "cited_by_count:desc",
         "per-page": limit,
-        "select": "id,title,publication_year,doi,cited_by_count,authorships,primary_location,awards",
     }
     data = await _get(client, f"{BASE}/works", params)
     return data.get("results", [])
@@ -132,9 +131,9 @@ def _extract_grants_from_works(works: list[dict]) -> list[Grant]:
     seen_grant_ids = set()
     grants = []
     for w in works:
-        for g_data in w.get("awards") or []:
+        for g_data in w.get("grants") or []:
             funder_name = g_data.get("funder_display_name") or "Unknown Funder"
-            award_id = g_data.get("funder_award_id")
+            award_id = g_data.get("award_id")
             
             # Use (funder, award_id) as key for deduplication
             key = (funder_name.lower(), (award_id or "").lower())
@@ -152,7 +151,7 @@ def _extract_grants_from_works(works: list[dict]) -> list[Grant]:
                 title=title,
                 funder=funder_name,
                 grant_id=award_id,
-                url=g_data.get("id") or g_data.get("funder_id"),
+                url=g_data.get("id") or g_data.get("funder"),
                 active=is_active,
                 start_year=pub_year,
                 end_year=None,
