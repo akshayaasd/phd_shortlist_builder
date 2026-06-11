@@ -2,6 +2,13 @@
 
 A system that ingests a student profile and produces a ranked shortlist of PhD supervisors with grant/paper evidence and personalised match rationales.
 
+## Recent Optimizations & Features
+
+* **Cross-Reference Enrichment:** Cross-links grant-only candidates (from NIH/UKRI) with their verified publications on OpenAlex, and hydrates paper-only candidates with active grants.
+* **Fuzzy Institution & Name Validation:** Avoids false-positive publication/grant attachments by performing strict name token matching and fuzzy institution verification.
+* **Embedding-Band Domain Guard:** Uses pre-computed topic embedding cosine similarity to classify candidates (auto-passing high similarity, auto-rejecting low similarity), falling back to GPT-4o-mini only for the ambiguous middle band. This reduces LLM API costs by up to 80%.
+* **Concurrency & Rate-Limit Management:** Implements a token bucket semaphore (5 concurrent requests max) with exponential backoff retries to guarantee smooth operations and prevent OpenAlex HTTP 429 rate limit triggers.
+
 ## Quick Start
 
 ```bash
