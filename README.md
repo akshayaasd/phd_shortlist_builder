@@ -12,24 +12,27 @@ A system that ingests a student profile and produces a ranked shortlist of PhD s
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
+# 1. Navigate to the project directory
+cd phd-shortlist-builder
+
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 2. Set your OpenAI API key
+# 3. Set your OpenAI API key
 cp .env.example .env
 # Edit .env and add OPENAI_API_KEY=sk-...
 
-# 3. Run on the sample profile
+# 4. Run on the sample profile
 python run.py --profile sample_profiles/student_001.json
 
-# 4. Fast test (dry-run, ~2 min)
+# 5. Fast test (dry-run, ~2 min)
 python run.py --profile sample_profiles/student_001.json --dry-run
 
-# 5. Ingest outcome feedback
+# 6. Ingest outcome feedback
 python run.py ingest-outcomes --csv outcomes.csv
 ```
 
-Output: `sample_output/<student_id>.json`
+Output: `phd-shortlist-builder/sample_output/<student_id>.json`
 
 ## Architecture
 
@@ -81,7 +84,7 @@ Stage 6: Output JSON
 
 ## Design Trade-offs
 
-See [DECISIONS.md](DECISIONS.md) for full reasoning.
+See [DECISIONS.md](phd-shortlist-builder/DECISIONS.md) for full reasoning.
 
 Key choices:
 - **Precision over recall**: hard discard on failed filters rather than flagging
@@ -92,7 +95,7 @@ Key choices:
 
 ## Output Schema
 
-See [schema.md](schema.md).
+See [schema.md](phd-shortlist-builder/schema.md).
 
 ## Requirements
 
