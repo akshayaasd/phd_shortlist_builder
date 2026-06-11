@@ -58,7 +58,7 @@ def test_senior_pi_high_score():
     )
     score = compute_career_stage_score(c)
     # Without a confirmed grant-source flag, score ~0.63; still well above discard threshold
-    assert score >= DISCARD_THRESHOLD * 2, f"Senior PI should score well above discard, got {score}"
+    assert score >= DISCARD_THRESHOLD + 0.20, f"Senior PI should score well above discard, got {score}"
     assert score >= LOW_CONFIDENCE_THRESHOLD, f"Senior PI should not be low-confidence, got {score}"
 
 

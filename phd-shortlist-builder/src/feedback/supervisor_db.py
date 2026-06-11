@@ -119,10 +119,14 @@ def ingest_outcomes_csv(csv_path: str) -> int:
             suppressed_until = None
             if outcome == "NOT_RECRUITING":
                 # Suppress this PI for 18 months
-                from datetime import timedelta
-                suppress_dt = datetime.now(timezone.utc).replace(
-                    month=((datetime.now().month - 1 + NOT_RECRUITING_SUPPRESS_MONTHS) % 12) + 1
-                )
+                import calendar
+                now_utc = datetime.now(timezone.utc)
+                year_offset = (now_utc.month - 1 + NOT_RECRUITING_SUPPRESS_MONTHS) // 12
+                new_month = (now_utc.month - 1 + NOT_RECRUITING_SUPPRESS_MONTHS) % 12 + 1
+                new_year = now_utc.year + year_offset
+                max_days = calendar.monthrange(new_year, new_month)[1]
+                new_day = min(now_utc.day, max_days)
+                suppress_dt = now_utc.replace(year=new_year, month=new_month, day=new_day)
                 suppressed_until = suppress_dt.isoformat()
 
             if existing:

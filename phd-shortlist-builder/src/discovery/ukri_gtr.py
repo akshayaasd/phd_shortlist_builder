@@ -50,8 +50,12 @@ def _is_blocked(project: dict) -> bool:
     title = (project.get("title") or "").lower()
     if category in BLOCKED_CATEGORIES:
         return True
-    # Fellowships by title when category is generic
-    if "studentship" in title or "fellowship" in title and "project" not in title:
+    # Fellowships by title when category is generic — must be explicit about precedence
+    if "studentship" in title:
+        return True
+    if "fellowship" in title and "project" not in title:
+        return True
+    if "msca" in title and ("postdoc" in title or "doctoral network" in title):
         return True
     return False
 

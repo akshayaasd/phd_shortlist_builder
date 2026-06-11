@@ -32,10 +32,13 @@ from openai import AsyncOpenAI
 load_dotenv()
 
 logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
+# Suppress noisy HTTP loggers that can leak API keys in request URLs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
 log = logging.getLogger("phd_shortlist")
 
 
@@ -62,8 +65,7 @@ async def _run_pipeline(
     from src.enrichment.recruitment_score import score_and_rank
     from src.feedback.scorer import apply_feedback_scores
     from src.output.schema import (
-        build_shortlist, write_shortlist,
-        ShortlistMetadata, FilterLog
+        build_shortlist, write_shortlist, FilterLog
     )
 
     start_time = time.time()
@@ -138,8 +140,10 @@ async def _run_pipeline(
         # 5a. Email finding (verified only)
         await enrich_emails(after_verification, http)
 
-        # 5b. Targeted Grant Enrichment (NIH/UKRI by candidate name)
+        # 5b. Targeted Grant and Paper Enrichment
         await enrich_candidate_grants(after_verification, http)
+        from src.enrichment.paper_enricher import enrich_candidate_papers
+        await enrich_candidate_papers(after_verification, http)
 
         # 5c. Domain similarity (for RecruitmentScore)
         _apply_domain_similarity(after_verification, profile)
@@ -163,23 +167,22 @@ async def _run_pipeline(
     coverage = _coverage_by_area(final, profile)
     country_dist = Counter(c.country for c in final)
 
-    metadata = ShortlistMetadata(
-        total_candidates_discovered=total_discovered,
-        total_after_filtering=len(after_verification),
-        final_shortlist_count=len(final),
-        coverage_by_area=coverage,
-        country_distribution=dict(country_dist),
-        filter_rejection_log=FilterLog(
-            country_rejected=country_rejected,
-            domain_leakage_gate_a=gate_a_rejected,
-            domain_leakage_gate_b=gate_b_rejected,
-            career_stage_rejected=career_rejected,
-            verification_rejected=verification_rejected,
-            disambig_discarded=disambig_discarded,
-        ),
-    )
+    metadata_dict = {
+        "total_candidates_discovered": total_discovered,
+        "total_after_filtering": len(after_verification),
+        "coverage_by_area": coverage,
+        "country_distribution": dict(country_dist),
+        "filter_rejection_log": {
+            "country_rejected": country_rejected,
+            "domain_leakage_gate_a": gate_a_rejected,
+            "domain_leakage_gate_b": gate_b_rejected,
+            "career_stage_rejected": career_rejected,
+            "verification_rejected": verification_rejected,
+            "disambig_discarded": disambig_discarded,
+        },
+    }
 
-    shortlist = build_shortlist(profile.student_id, final, metadata)
+    shortlist = build_shortlist(profile.student_id, final, metadata_dict)
     out_path = write_shortlist(shortlist, output_dir)
 
     elapsed = time.time() - start_time

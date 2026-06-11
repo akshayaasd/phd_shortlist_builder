@@ -32,7 +32,7 @@ from src.candidate import Candidate
 log = logging.getLogger(__name__)
 CURRENT_YEAR = datetime.date.today().year
 
-DISCARD_THRESHOLD = 0.30
+DISCARD_THRESHOLD = 0.35
 LOW_CONFIDENCE_THRESHOLD = 0.60
 GRANT_PI_FLOOR = 0.60  # NIH/UKRI confirmed PI — cannot be a student
 

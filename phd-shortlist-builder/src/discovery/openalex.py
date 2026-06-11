@@ -36,11 +36,25 @@ def _polite(params: dict) -> dict:
     return params
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+_semaphore = None
+
+def _get_semaphore():
+    global _semaphore
+    if _semaphore is None:
+        _semaphore = asyncio.Semaphore(5)  # 5 concurrent requests max
+    return _semaphore
+
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=2, max=15))
 async def _get(client: httpx.AsyncClient, url: str, params: dict) -> dict:
-    resp = await client.get(url, params=_polite(params), timeout=20)
-    resp.raise_for_status()
-    return resp.json()
+    async with _get_semaphore():
+        await asyncio.sleep(0.2)  # smooth out request bursts
+        resp = await client.get(url, params=_polite(params), timeout=30)
+        
+        if resp.status_code == 429:
+            log.warning("OpenAlex 429 Too Many Requests - backing off...")
+            
+        resp.raise_for_status()
+        return resp.json()
 
 
 async def fetch_author_details(openalex_id: str, client: httpx.AsyncClient) -> dict[str, Any]:
@@ -208,6 +222,17 @@ async def _build_candidate_from_author(
     )
 
 
+_COUNTRY_ALIASES: dict[str, str] = {
+    "UK": "GB",
+    "UNITED KINGDOM": "GB",
+    "GREAT BRITAIN": "GB",
+    "USA": "US",
+    "UNITED STATES": "US",
+    "CANADA": "CA",
+    "AUSTRALIA": "AU",
+}
+
+
 async def discover_via_openalex(
     profile: StudentProfile,
     client: httpx.AsyncClient,
@@ -215,12 +240,16 @@ async def discover_via_openalex(
     dry_run: bool = False,
 ) -> list[Candidate]:
     """
-    Main entry point: queries OpenAlex works for each research interest + synonyms,
-    extracts the PIs (last authors) in target countries, and builds Candidates.
+    Queries OpenAlex for each research interest + synonyms,
+    filtered to target countries. Returns a deduplicated list of Candidates.
     """
-    # Normalize country codes (handles "Germany" → "DE", "UK" → "GB", etc.)
-    normalised_countries = [_normalise_country(c) for c in profile.target_countries]
-    target_countries = "|".join(normalised_countries)
+    out_countries: list[str] = []
+    for c in profile.target_countries:
+        code = c.upper().strip()
+        code = _COUNTRY_ALIASES.get(code, code)
+        if code and code not in out_countries:
+            out_countries.append(code)
+    target_countries = "|".join(out_countries)
     seen_ids: set[str] = set()
     candidates: list[Candidate] = []
 

@@ -3,52 +3,91 @@
   "education": [
     {
       "degree": "B.Tech",
-      "field": "Biomedical Engineering",
-      "institution": "IIT Delhi",
-      "graduation_year": 2022,
-      "gpa": "8.9/10",
-      "thesis": "Non-invasive neural signal decoding using EEG"
-    },
-    {
-      "degree": "M.Tech",
-      "field": "Computational Neuroscience",
-      "institution": "IIT Bombay",
-      "graduation_year": 2024,
-      "gpa": "9.1/10",
-      "thesis": "Sparse coding models of visual cortical representations"
+      "field": "Artificial Intelligence and Data Science",
+      "institution": "XYZ Engineering College",
+      "graduation_year": 2026,
+      "gpa": "8.31/10",
+      "thesis": "Industrial defect detection using computer vision and deep learning"
     }
   ],
-  "skills": ["Python", "MATLAB", "PyTorch", "fMRI analysis", "EEG signal processing", "spike sorting", "machine learning"],
+  "skills": [
+    "Python",
+    "Machine Learning",
+    "Deep Learning",
+    "Computer Vision",
+    "PyTorch",
+    "TensorFlow",
+    "YOLO",
+    "Generative AI",
+    "LLMs",
+    "Flask",
+    "FastAPI",
+    "SQL",
+    "Docker",
+    "Git",
+    "Data Analysis"
+  ],
   "projects": [
     {
-      "title": "Decoding motor imagery from EEG using transformer models",
-      "description": "Built a real-time BCI pipeline achieving 85% accuracy on 4-class motor imagery classification."
+      "title": "IIoT Quality Control System",
+      "description": "Built an industrial defect detection pipeline using YOLO and EfficientNet for weld and surface defect identification with real-time deployment capabilities."
     },
     {
-      "title": "Predictive coding model of V1 neural responses",
-      "description": "Implemented a hierarchical generative model explaining ~72% of variance in V1 responses to natural images."
+      "title": "PlotPilot Multi-Agent Data Analysis System",
+      "description": "Developed a multi-agent framework for automated data analysis, visualization generation, and insight extraction using LLM-powered agents."
+    },
+    {
+      "title": "Diagnovision",
+      "description": "AI-powered healthcare application for disease prediction and medical image analysis using deep learning models."
+    },
+    {
+      "title": "Financial Advisor Agent",
+      "description": "Built an AI agent that predicts stock trends using machine learning and provides investment recommendations through a conversational interface."
     }
   ],
   "publications": [
     {
-      "title": "Sparse autoencoder representations align with human perceptual similarity judgments",
-      "venue": "NeurIPS Workshop on Symmetry and Geometry in Neural Representations",
-      "year": 2023
+      "title": "PlotPilot: Multi-Agent Framework for Automated Data Analysis and Visualization",
+      "venue": "International Conference Publication",
+      "year": 2025
     }
   ],
-  "research_interests": [
-    "computational neuroscience",
-    "neural coding and representation learning",
-    "brain-computer interfaces",
-    "systems neuroscience",
-    "neuroimaging and fMRI analysis"
+  "internships": [
+    {
+      "organization": "Gnani.ai",
+      "role": "Python Developer Intern",
+      "year": 2025,
+      "description": "Developed GenAI-powered conversational AI systems, backend APIs, and enterprise automation solutions."
+    }
   ],
-  "target_countries": ["US", "UK", "CA"],
+  "achievements": [
+    "Caterpillar Hackathon Finalist",
+    "ScrollHack Finalist",
+    "Ideathon Winner"
+  ],
+  "research_interests": [
+    "artificial intelligence",
+    "machine learning",
+    "computer vision",
+    "multimodal AI",
+    "large language models",
+    "agentic AI systems",
+    "industrial AI",
+    "human-AI interaction",
+    "generative AI"
+  ],
+  "target_countries": [
+    "US",
+    "UK",
+    "CA",
+    "Germany",
+    "Singapore"
+  ],
   "target_intake": {
     "semester": "Fall",
-    "year": 2025
+    "year": 2027
   },
   "nationality": "IN",
-  "intro_call_summary": "Student is interested in how the brain encodes and transforms sensory information. Strong engineering background. Wants a lab that works at the intersection of theory and experiment. Open to both neuroscience departments and CS/AI labs with neuro focus. Prefers labs that have active collaboration with experimental groups.",
-  "raw_resume": "Priya Sharma | priya.sharma@gmail.com\nIIT Bombay M.Tech Computational Neuroscience (2024) | IIT Delhi B.Tech Biomedical Engineering (2022)\nSkills: Python, PyTorch, MATLAB, fMRI, EEG, spike sorting, ML\nPublished at NeurIPS 2023 Workshop. Research intern at NIMHANS (2022)."
+  "intro_call_summary": "Student has strong practical experience in AI, machine learning, computer vision, and GenAI systems. Interested in pursuing research at the intersection of multimodal AI, computer vision, agentic systems, and large language models. Looking for research groups with strong industry collaboration and opportunities to work on real-world AI applications.",
+  "raw_resume": "Akshayaa | B.Tech Artificial Intelligence and Data Science | CGPA: 8.31/10. Python Developer Intern at Gnani.ai. Research publication on PlotPilot multi-agent data analysis framework. Projects include IIoT Quality Control using YOLO and EfficientNet, Diagnovision healthcare AI platform, and AI-based financial advisor agent. Skills: Python, ML, DL, Computer Vision, GenAI, LLMs, Flask, SQL, Docker. Achievements: Caterpillar Hackathon Finalist, ScrollHack Finalist, Ideathon Winner."
 }

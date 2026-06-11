@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 
 @dataclass
@@ -57,6 +57,10 @@ class StudentProfile:
     interest_synonyms: dict[str, list[str]] = field(default_factory=dict)
     interest_embeddings: dict[str, list[float]] = field(default_factory=dict)
 
+    # Optional enrichment fields (from profile JSON)
+    internships: list[dict[str, Any]] = field(default_factory=list)
+    achievements: list[str] = field(default_factory=list)
+
     def all_query_terms(self) -> list[str]:
         """Flat list of original interests + synonyms for API queries."""
         terms = list(self.research_interests)
@@ -70,11 +74,17 @@ class StudentProfile:
             f"{e.degree} in {e.field} ({e.institution})" for e in self.education
         )
         pub_titles = "; ".join(p.title for p in self.publications) or "no publications yet"
+        internship_str = "; ".join(
+            f"{i.get('role', '')} at {i.get('organization', '')}" for i in self.internships
+        ) or ""
+        achievement_str = ", ".join(self.achievements[:3]) or ""
         return (
             f"Degrees: {degrees}. "
             f"Skills: {', '.join(self.skills[:6])}. "
             f"Publications: {pub_titles}. "
-            f"Intro: {self.intro_call_summary[:300]}"
+            + (f"Industry experience: {internship_str}. " if internship_str else "")
+            + (f"Achievements: {achievement_str}. " if achievement_str else "")
+            + f"Intro: {self.intro_call_summary[:300]}"
         )
 
 
@@ -114,4 +124,6 @@ def load_profile(path: str | Path) -> StudentProfile:
         nationality=data["nationality"],
         intro_call_summary=data["intro_call_summary"],
         raw_resume=data.get("raw_resume", ""),
+        internships=data.get("internships", []),
+        achievements=data.get("achievements", []),
     )

@@ -17,7 +17,7 @@ from src.profile_parser import StudentProfile
 
 log = logging.getLogger(__name__)
 
-# Aliases that may appear in source data
+# Aliases that may appear in source data or student profile input
 _ALIASES: dict[str, str] = {
     "UK": "GB",
     "UNITED KINGDOM": "GB",
@@ -26,6 +26,26 @@ _ALIASES: dict[str, str] = {
     "USA": "US",
     "CANADA": "CA",
     "AUSTRALIA": "AU",
+    "GERMANY": "DE",
+    "SINGAPORE": "SG",
+    "FRANCE": "FR",
+    "NETHERLANDS": "NL",
+    "SWEDEN": "SE",
+    "SWITZERLAND": "CH",
+    "BELGIUM": "BE",
+    "DENMARK": "DK",
+    "FINLAND": "FI",
+    "NORWAY": "NO",
+    "ITALY": "IT",
+    "SPAIN": "ES",
+    "JAPAN": "JP",
+    "CHINA": "CN",
+    "SOUTH KOREA": "KR",
+    "NEW ZEALAND": "NZ",
+    "IRELAND": "IE",
+    "AUSTRIA": "AT",
+    "PORTUGAL": "PT",
+    "HONG KONG": "HK",
 }
 
 

@@ -45,9 +45,18 @@ DOMAIN_ANCHORS: dict[str, list[str]] = {
     "brain-computer interface": ["brain-computer", "bci", "neural interface", "motor imagery", "eeg", "neuroprosthetic", "closed-loop"],
     "systems neuroscience": ["systems neuroscience", "neural circuit", "in vivo", "electrophysiology", "calcium imaging", "optogenetics"],
     "neuroimaging": ["fmri", "neuroimaging", "brain imaging", "bold signal", "connectome", "diffusion tensor", "pet scan"],
-    "machine learning": ["machine learning", "deep learning", "neural network", "reinforcement learning", "transformer", "llm", "generative model"],
-    "natural language processing": ["nlp", "natural language", "language model", "text classification", "named entity", "question answering"],
-    "computer vision": ["computer vision", "image recognition", "object detection", "convolutional", "semantic segmentation"],
+    # AI / ML core — covers student_001's research interests
+    "machine learning": ["machine learning", "deep learning", "neural network", "reinforcement learning", "transformer", "llm", "generative model", "gradient descent", "supervised learning", "unsupervised"],
+    "artificial intelligence": ["artificial intelligence", "machine learning", "deep learning", "neural network", "ai system", "intelligent system", "autonomous", "reasoning"],
+    "natural language processing": ["nlp", "natural language", "language model", "text classification", "named entity", "question answering", "sentiment", "bert", "gpt"],
+    "large language models": ["large language model", "llm", "gpt", "language model", "foundation model", "instruction tuning", "rlhf", "pretrained", "transformer", "prompt"],
+    "generative ai": ["generative", "diffusion model", "gan", "vae", "image generation", "text generation", "stable diffusion", "gpt", "llm", "foundation model"],
+    "agentic ai systems": ["agent", "agentic", "multi-agent", "autonomous agent", "tool use", "planning", "reasoning", "llm agent", "workflow", "orchestration"],
+    "multimodal ai": ["multimodal", "vision-language", "image-text", "cross-modal", "clip", "vqa", "visual question", "captioning", "audio-visual"],
+    "computer vision": ["computer vision", "image recognition", "object detection", "convolutional", "semantic segmentation", "visual", "yolo", "resnet", "vit", "feature extraction"],
+    "industrial ai": ["industrial", "manufacturing", "defect detection", "quality control", "robotics", "automation", "iot", "edge computing", "predictive maintenance"],
+    "human-ai interaction": ["human-ai", "human-computer", "hci", "explainability", "interpretability", "fairness", "user study", "interface", "trust", "transparency"],
+    # Life sciences
     "biomaterials": ["biomaterial", "scaffold", "tissue engineering", "biocompatibility", "hydrogel", "implant", "biodegradable"],
     "climate science": ["climate change", "carbon", "greenhouse", "atmospheric", "sea level", "glacial", "ocean circulation"],
     "ecology": ["ecosystem", "biodiversity", "species", "habitat", "population dynamics", "food web", "conservation"],
@@ -87,8 +96,26 @@ def gate_a_check(candidate: Candidate, profile: StudentProfile) -> bool:
     Returns False if the candidate is clearly out of domain.
     """
     candidate_topics_lower = " ".join(candidate.topics).lower()
+
+    # When no OpenAlex topics, fall back to grant titles as signal text
     if not candidate_topics_lower:
-        return True  # no topics — give benefit of doubt, proceed to Gate B
+        grant_text = " ".join(
+            g.title for g in candidate.grants if g.title
+        ).lower()
+        if not grant_text:
+            return True  # truly no evidence — give benefit of doubt to Gate B
+
+        # Check grant titles against anchors
+        for interest in profile.research_interests:
+            anchors = _get_anchors_for_interest(interest)
+            if any(anchor in grant_text for anchor in anchors):
+                return True
+        # Grant titles exist but none matched any anchor → reject at Gate A
+        log.debug(
+            f"Gate A (grant-title check) REJECTED: {candidate.name} — "
+            f"grants: {grant_text[:80]}"
+        )
+        return False
 
     for interest in profile.research_interests:
         anchors = _get_anchors_for_interest(interest)
@@ -112,7 +139,8 @@ async def gate_b_check(
 
     topic_text = ", ".join(candidate.topics[:8]) if candidate.topics else ""
     paper_titles = "; ".join(p.title for p in candidate.papers[:2]) if candidate.papers else ""
-    evidence = topic_text or paper_titles or "No topic information available"
+    grant_titles = "; ".join(g.title for g in candidate.grants[:3] if g.title) if candidate.grants else ""
+    evidence = topic_text or paper_titles or grant_titles or "No topic information available"
 
     prompt = (
         "You are classifying whether a researcher's work is in the same scientific domain "

@@ -53,6 +53,7 @@ The system produces a single JSON file per student at `sample_output/<student_id
 | `title` | string |
 | `year` | integer |
 | `doi` | string \| null | Full `https://doi.org/...` URL |
+| `url` | string \| null | Landing page URL (from `primary_location`), falls back to DOI |
 | `cited_by_count` | integer |
 
 ## Grant

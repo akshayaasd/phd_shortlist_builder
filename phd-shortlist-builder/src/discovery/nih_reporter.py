@@ -62,8 +62,19 @@ def _extract_grant(project: dict) -> Grant:
     )
 
 
+def _extract_pi_email(record: dict) -> str | None:
+    pis = record.get("principal_investigators") or []
+    if not pis:
+        return None
+    pi = pis[0]
+    email = pi.get("email")
+    if not email:
+        return None
+    stripped = email.strip()
+    return stripped if stripped else None
+
 def _parse_pi(project: dict) -> dict[str, str] | None:
-    """Extract PI name and institution from a NIH project record."""
+    """Extract PI name, institution, and email from a NIH project record."""
     pis = project.get("principal_investigators") or []
     if not pis:
         return None
@@ -82,7 +93,7 @@ def _parse_pi(project: dict) -> dict[str, str] | None:
         "name": full_name,
         "institution": institution,
         "country": country,
-        "email": pi.get("email") or None,
+        "email": _extract_pi_email(project),
     }
 
 
@@ -152,6 +163,7 @@ async def discover_via_nih(
                         institution=pi_info["institution"],
                         country=pi_info["country"],
                         contact_email=pi_info.get("email"),
+                        email_inferred=False,
                         grants=[_extract_grant(project)],
                         active_grant_count=1,
                         data_sources=["nih_reporter"],

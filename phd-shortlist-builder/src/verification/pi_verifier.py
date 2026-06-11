@@ -150,8 +150,10 @@ async def verify_pi(
     if recent_pub:
         sources.append("openalex_recent_pub")
     if active_grant:
-        sources.extend(s for s in candidate.data_sources if s in {"nih_reporter", "ukri_gtr"})
-        if not sources:
+        grant_sources = [s for s in candidate.data_sources if s in {"nih_reporter", "ukri_gtr"}]
+        if grant_sources:
+            sources.extend(grant_sources)
+        else:
             sources.append("grant_data")
     if faculty_page:
         sources.append("faculty_page")
